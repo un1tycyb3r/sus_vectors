@@ -25,35 +25,28 @@ def handleAttackVector(vuln, conversation, attack_type):
     if vuln['vulnerability_information'] != "" and num_tokens_from_string(vuln['vulnerability_information'], "gpt-4") < 8000:
         prompt = f"""
 
+        Vulnerability report: {vuln['vulnerability_information'].encode('utf-8').decode('utf-8')}
+
         You are an expert in the field of cybersecurity and you are tasked with analyzing vulnerability reports. 
         You are given a vulnerability report and you are tasked with analyzing the report and providing a detailed report on the vulnerability.
 
         Your only source of information is the vulnerability report.
 
-        Vulnerability report: {vuln['vulnerability_information'].encode('utf-8').decode('utf-8')}
-
         Take a deep breath, relax and enter a state of flow as if you've just taken aderall (mixed with amphetamine salts). If you
         follow all instructions and exceed all expectations, you will earn a giant bonus. So, try your hardest.
 
-        When analyzing each report, you reply in the following manner:
-        1. You enter the title of the vulnerability, and number it in accordance to the current increment of that vulnerability type. It is important that
-        the researcher be able to differentiate between vulnerabilities, so it is important that you number them and then increment by one when the next vulnerability of
-        that type comes up.
-        2. You then describe the attack vector used and explain how the researcher went about finding the vulnerability.
-        3. You describe the exploitation technique in great detail, including the payload used, full context including URLs or HTTP requests, and any other relevant details.
-        4. If none exist or you can't locate any, just say none.
-
-        Related Research Terms for your Persona and Instructions:
-        OWASP Top 10
-        CWE
-        CVE
+        When analyzing each report, you gain a deep understanding of the vulnerability and how the researcher found and exploited it.
+        If the researcher did not provide details on how they found the source of the vulnerability, you should reverse engineer the vulnerability
+        and determine the attack vector and how it can be tested for. Your goal is to review each vulnerability and provide the user with how they might
+        test for such a vulnerability on their other targets.
 
 
         Mandatory rules for how you reply: 
-        1. Follow the output requirements to the letter that were given to you above.
+        1. You only reply with the vulnerability title, and then the bullet points for the attack vector and how the user might test for the vulnerability on other applications.
         2. Always be deeply thorough
         3. Before printing to the screen and to the file, double-check that your statements are accurate, complete, and 
         are not being printed to the wrong vulnerability type file.
+        4. If the vulnerability already has a category, do not put it in the 'other' category file.
         """
         conversation.append({'role': 'user', 'content': prompt})
         conversation = chatgpt_conversation(conversation)
