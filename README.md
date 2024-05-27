@@ -1,1 +1,1 @@
-## A new approach to the sus_params research done by Jhaddix and G0lden
+## Additional research done with the sus_params project by Jhaddix and g0lden
