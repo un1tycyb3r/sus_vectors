@@ -5,7 +5,7 @@ import tiktoken
 import time
 
 api_key = os.getenv("OPENAI_API_KEY")
-model = "gpt-4"
+model = "gpt-4-turbo"
 client = OpenAI(api_key=api_key)
 
 def chatgpt_conversation(conversation_log):
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         file_contents = user_file.read()
 
     parsed_json = json.loads(file_contents)
-    count = 12100
+    count = 569
     total = len(parsed_json)
     retryFlag = False
     while count < total:
@@ -98,47 +98,104 @@ if __name__ == "__main__":
                     handleAttackVector(vuln, xss_conversation, "cross site scripting")
                     grabConvo("xss", xss_conversation)
                     xss_conversation.clear()
-                if "ssrf" in vuln['weakness']['name'].lower():
+                elif "ssrf" in vuln['weakness']['name'].lower():
                     handleAttackVector(vuln, ssrf_conversation, "Server Side Request Forgery")
                     grabConvo("ssrf", ssrf_conversation)
                     ssrf_conversation.clear()
-                if "sql injection" in vuln['weakness']['name'].lower():
+                elif "sql injection" in vuln['weakness']['name'].lower():
                     handleAttackVector(vuln, sqli_conversation, "SQL injection")
                     grabConvo("sqli", sqli_conversation)
                     sqli_conversation.clear()
-                if "path traversal" in vuln['weakness']['name'].lower():
+                elif "path traversal" in vuln['weakness']['name'].lower():
                     handleAttackVector(vuln, fileinc_conversation, "file inclusion")
                     grabConvo("fileinc", fileinc_conversation)
                     fileinc_conversation.clear()
-                if "idor" in vuln['weakness']['name'].lower():
+                elif "idor" in vuln['weakness']['name'].lower():
                     handleAttackVector(vuln, idor_conversation, "IDOR")
                     grabConvo("idor", idor_conversation)
                     idor_conversation.clear()
-                if "open redirect" in vuln['weakness']['name'].lower():
+                elif "open redirect" in vuln['weakness']['name'].lower():
                     handleAttackVector(vuln, redirect_conversation, "Open Redirect")
                     grabConvo("redirect", redirect_conversation)
                     redirect_conversation.clear() 
-                if "csrf" in vuln['weakness']['name'].lower():
+                elif "csrf" in vuln['weakness']['name'].lower():
                     handleAttackVector(vuln, csrf_conversation, "CSRF")
                     grabConvo("csrf", csrf_conversation)
                     csrf_conversation.clear()
-                if "business logic" in vuln['weakness']['name'].lower():
+                elif "business logic" in vuln['weakness']['name'].lower():
                     handleAttackVector(vuln, business_logic_conversation, "Business Logic")
                     grabConvo("business_logic", business_logic_conversation)
                     business_logic_conversation.clear()
-                if "mobile" in vuln['weakness']['name'].lower():
+                elif "mobile" in vuln['weakness']['name'].lower():
                     handleAttackVector(vuln, mobile_conversation, "Mobile")
                     grabConvo("mobile", mobile_conversation)
                     mobile_conversation.clear()
-                if "xxe" in vuln['weakness']['name'].lower():
+                elif "xxe" in vuln['weakness']['name'].lower():
                     handleAttackVector(vuln, xxe_conversation, "XXE")
                     grabConvo("xxe", xxe_conversation)
                     xxe_conversation.clear()
-                if "code injection" in vuln['weakness']['name'].lower():
+                elif "code injection" in vuln['weakness']['name'].lower():
                     handleAttackVector(vuln, code_injection_conversation, "Code Injection")
                     grabConvo("code_injection", code_injection_conversation)
                     code_injection_conversation.clear()
-                if "crlfi" in vuln['weakness']['name'].lower():
+                elif "crlfi" in vuln['weakness']['name'].lower():
+                    handleAttackVector(vuln, crlfi_conversation, "CRLFI")
+                    grabConvo("crlfi", crlfi_conversation)
+                    crlfi_conversation.clear()
+                else:
+                    handleAttackVector(vuln, crlfi_conversation, "other")
+                    grabConvo("other", crlfi_conversation)
+                    crlfi_conversation.clear()
+            elif "title" in vuln.keys():
+                if "xss" in vuln['title'].lower() or "cross site scripting" in vuln['title'].lower():
+                    handleAttackVector(vuln, xss_conversation, "cross site scripting")
+                    grabConvo("xss", xss_conversation)
+                    xss_conversation.clear()
+                elif "ssti" in vuln['title'].lower() or "server side template injection" in vuln['title'].lower():
+                    handleAttackVector(vuln, ssti_conversation, "Server Side Template Injection")
+                    grabConvo("ssti", ssti_conversation)
+                    ssti_conversation.clear()
+                elif "ssrf" in vuln['title'].lower() or "server side request forgery" in vuln['title'].lower():
+                    handleAttackVector(vuln, ssrf_conversation, "Server Side Request Forgery")
+                    grabConvo("ssrf", ssrf_conversation)
+                    ssrf_conversation.clear()
+                elif "sqli" in vuln['title'].lower() or "sql injection" in vuln['title'].lower():
+                    handleAttackVector(vuln, sqli_conversation, "SQL injection")
+                    grabConvo("sqli", sqli_conversation)
+                    sqli_conversation.clear()
+                elif "lfi" in vuln['title'].lower() or "path traversal" in vuln['title'].lower():
+                    handleAttackVector(vuln, fileinc_conversation, "file inclusion")
+                    grabConvo("fileinc", fileinc_conversation)
+                    fileinc_conversation.clear()
+                elif "idor" in vuln['title'].lower():
+                    handleAttackVector(vuln, idor_conversation, "IDOR")
+                    grabConvo("idor", idor_conversation)
+                    idor_conversation.clear()
+                elif "open redirect" in vuln['title'].lower():
+                    handleAttackVector(vuln, redirect_conversation, "Open Redirect")
+                    grabConvo("redirect", redirect_conversation)
+                    redirect_conversation.clear()
+                elif "csrf" in vuln['title'].lower():
+                    handleAttackVector(vuln, csrf_conversation, "CSRF")
+                    grabConvo("csrf", csrf_conversation)
+                    csrf_conversation.clear()
+                elif "business logic" in vuln['title'].lower():
+                    handleAttackVector(vuln, business_logic_conversation, "Business Logic")
+                    grabConvo("business_logic", business_logic_conversation)
+                    business_logic_conversation.clear()
+                elif "mobile" in vuln['title'].lower():
+                    handleAttackVector(vuln, mobile_conversation, "Mobile")
+                    grabConvo("mobile", mobile_conversation)
+                    mobile_conversation.clear()
+                elif "xxe" in vuln['title'].lower():
+                    handleAttackVector(vuln, xxe_conversation, "XXE")
+                    grabConvo("xxe", xxe_conversation)
+                    xxe_conversation.clear()
+                elif "code injection" in vuln['title'].lower():
+                    handleAttackVector(vuln, code_injection_conversation, "Code Injection")
+                    grabConvo("code_injection", code_injection_conversation)
+                    code_injection_conversation.clear()
+                elif "crlfi" in vuln['title'].lower():
                     handleAttackVector(vuln, crlfi_conversation, "CRLFI")
                     grabConvo("crlfi", crlfi_conversation)
                     crlfi_conversation.clear()
@@ -147,62 +204,7 @@ if __name__ == "__main__":
                     grabConvo("other", crlfi_conversation)
                     crlfi_conversation.clear()
             else:
-                if "xss" in vuln['title'].lower() or "cross site scripting" in vuln['title'].lower():
-                    handleAttackVector(vuln, xss_conversation, "cross site scripting")
-                    grabConvo("xss", xss_conversation)
-                    xss_conversation.clear()
-                if "ssti" in vuln['title'].lower() or "server side template injection" in vuln['title'].lower():
-                    handleAttackVector(vuln, ssti_conversation, "Server Side Template Injection")
-                    grabConvo("ssti", ssti_conversation)
-                    ssti_conversation.clear()
-                if "ssrf" in vuln['title'].lower() or "server side request forgery" in vuln['title'].lower():
-                    handleAttackVector(vuln, ssrf_conversation, "Server Side Request Forgery")
-                    grabConvo("ssrf", ssrf_conversation)
-                    ssrf_conversation.clear()
-                if "sqli" in vuln['title'].lower() or "sql injection" in vuln['title'].lower():
-                    handleAttackVector(vuln, sqli_conversation, "SQL injection")
-                    grabConvo("sqli", sqli_conversation)
-                    sqli_conversation.clear()
-                if "lfi" in vuln['title'].lower() or "path traversal" in vuln['title'].lower():
-                    handleAttackVector(vuln, fileinc_conversation, "file inclusion")
-                    grabConvo("fileinc", fileinc_conversation)
-                    fileinc_conversation.clear()
-                if "idor" in vuln['title'].lower():
-                    handleAttackVector(vuln, idor_conversation, "IDOR")
-                    grabConvo("idor", idor_conversation)
-                    idor_conversation.clear()
-                if "open redirect" in vuln['title'].lower():
-                    handleAttackVector(vuln, redirect_conversation, "Open Redirect")
-                    grabConvo("redirect", redirect_conversation)
-                    redirect_conversation.clear()
-                if "csrf" in vuln['title'].lower():
-                    handleAttackVector(vuln, csrf_conversation, "CSRF")
-                    grabConvo("csrf", csrf_conversation)
-                    csrf_conversation.clear()
-                if "business logic" in vuln['title'].lower():
-                    handleAttackVector(vuln, business_logic_conversation, "Business Logic")
-                    grabConvo("business_logic", business_logic_conversation)
-                    business_logic_conversation.clear()
-                if "mobile" in vuln['title'].lower():
-                    handleAttackVector(vuln, mobile_conversation, "Mobile")
-                    grabConvo("mobile", mobile_conversation)
-                    mobile_conversation.clear()
-                if "xxe" in vuln['title'].lower():
-                    handleAttackVector(vuln, xxe_conversation, "XXE")
-                    grabConvo("xxe", xxe_conversation)
-                    xxe_conversation.clear()
-                if "code injection" in vuln['title'].lower():
-                    handleAttackVector(vuln, code_injection_conversation, "Code Injection")
-                    grabConvo("code_injection", code_injection_conversation)
-                    code_injection_conversation.clear()
-                if "crlfi" in vuln['title'].lower():
-                    handleAttackVector(vuln, crlfi_conversation, "CRLFI")
-                    grabConvo("crlfi", crlfi_conversation)
-                    crlfi_conversation.clear()
-                else:
-                    handleAttackVector(vuln, crlfi_conversation, "other")
-                    grabConvo("other", crlfi_conversation)
-                    crlfi_conversation.clear()
+                print("No vulnerability type found")
             retryFlag = False
             count = count + 1
             time.sleep(1)
