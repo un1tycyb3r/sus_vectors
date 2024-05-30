@@ -1,0 +1,205 @@
+Vulnerability: Server-Side Request Forgery (SSRF) leading to AWS IAM keys leakage
+
+- Attack Vector:
+  - Utilizing the upload functionality to upload files from a remote server.
+  - Bypassing SSRF protections using DNS rebinding.
+  - Fetching AWS IAM keys when the Concrete CMS is running in the cloud.
+
+- Testing the Vulnerability:
+  - Test the application's upload functionality by uploading a file from a remote server.
+  - Attempt to bypass SSRF protections by performing DNS rebinding attacks.
+  - Monitor network traffic to see if AWS IAM keys are leaked when the Concrete CMS is running in the cloud.
+
+**Vulnerability Title: Bypass of SSRF Protection in Ghost Blog**
+
+- **Attack Vector**: 
+  - The vulnerability allows an attacker with certain roles (e.g., publisher, editor, etc.) to perform arbitrary GET requests to internal and potentially sensitive endpoints by abusing insufficient validation mechanisms in the SSRF protection logic of the Ghost Blog platform.
+  - Attackers can use specially crafted hostnames or setups that resolve to loopback or other internal IP addresses, bypassing the existing hostname checks in the `fetchOembedData()` function. Examples include using DNS rebinding, subdomain attacks like `customer1.app.localhost.my.company.127.0.0.1.nip.io`, or making use of services that redirect to internal IP addresses like `127.0.0.1`.
+
+- **Testing for the Vulnerability**:
+  1. **Identifying SSRF Protection Logic**: Review the application's source code or documentation to identify any functions or API endpoints that fetch data from URLs provided by the user. Focus on functions similar to Ghost's `fetchOembedData()`.
+  2. **Crafting Payloads**: Generate a list of URLs that may resolve internally (e.g., through DNS rebinding, local or cloud-based development environments, or using wildcard DNS services like nip.io). These URLs should point to typical internal resources (e.g., metadata services, internal APIs).
+  3. **Bypass Attempts**: Use these crafted URLs in the identified functions or endpoints. Monitor either the server's response or directly observe server-side behavior (e.g., through logs) to see if the requests reach and retrieve data from the internal resources.
+  4. **Expanding Test Coverage**: Incorporate variations of hostnames and protocols to check the robustness of SSRF defenses over different vectors (e.g., various schema handling `http`, `https`, or others and different types of obscured or malformed URLs).
+  5. **Automate Testing**: Create scripts or use existing SSRF testing tools to automate the generation of requests with varying payloads to test SSRF protections at scale.
+  6. **Further Enumeration**: For any found bypass, test additional internal network IPs and services to understand the extent of the accessible internal surface area through the SSRF vulnerability.
+  
+By following these testing guidelines, one might find SSRF vulnerabilities in similar contexts or applications where user-supplied URLs are fetched by the server, which could potentially expose sensitive internal resources. Always ensure to carry out such tests in a controlled and authorized environment.
+
+**Vulnerability Title: XXE (XML External Entity) Injection**
+
+- **Attack Vector:**
+  - XXE vulnerabilities occur when an application parses XML input that includes a reference to an external entity. This flaw can be exploited by an attacker to cause denial of service (DoS), perform server-side request forgery (SSRF), and expose sensitive internal files.
+  - The attack involves modifying the XML data being sent to the application in such a way that it includes malicious entities that are processed by the XML parser. If the parser is improperly configured to allow external entities, these entities can perform unintended actions.
+
+- **Testing for XXE Vulnerability:**
+  - **Identify Points of Entry:** Locate all points where the application accepts XML input. This includes file uploads, SOAP requests, and any forms that accept XML or where XML can be substituted.
+  - **Modify XML Data:** Test by inserting a typical XXE payload that attempts to define and use an external entity. An example payload might be:
+    ```
+    <!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+    <data>&xxe;</data>
+    ```
+  - **Payload Variations:** Try different variations of payloads to account for different parser configurations and defense mechanisms, including attempts to access different file URIs or using different XML structures.
+  - **Check the Response:** Observe the application's response to the payload. Confirm XXE exploitation if you receive unexpected outputs like file contents, error messages indicating file paths, or if the application behaves unexpectedly (e.g., longer response times which may indicate SSRF or a DoS attack).
+  - **Automated Scanning:** Use automated tools and scanners that can send various XXE payloads to detect if the application is vulnerable. Tools like OWASP ZAP, Burp Suite, and XML-specific vulnerability scanners can automate this process.
+  - **Check XML Parser Configuration:** Review the application’s XML parser settings to ensure that it is configured securely to disallow processing of external entities. Proper settings will mitigate the risk of XXE and should be part of a secure development lifecycle.
+
+- **Extra Tips:**
+  - Always consider different XML parsers used by the application as they might have different susceptibility to XXE attacks.
+  - In environments where XML is frequently used, ensure ongoing monitoring and logging of XML data processing to detect and respond to potential XXE attempts.
+
+**Vulnerability Title: Server-Side Request Forgery (SSRF) in Repository Import Functionality**
+
+- **Attack Vector:**
+  - This vulnerability exploits inadequate validation of user-supplied URLs within the repository import functionality. When a user is prompted to import a repository from an external source (like GitHub), the system fails to verify whether the URL belongs to the intended source or if it's controlled by an external party. This allows an attacker to provide URLs that the server will interact with, potentially accessing unauthorized resources.
+
+- **How to Test for This Vulnerability on Other Applications:**
+  - **Identify Features that Fetch External Resources:** Look for features in the application that request external resources based on user input. This can include functionalities like importing data, linking external accounts, or image/video fetching mechanisms.
+  - **Provide External URLs:** During testing, provide various external URLs to these features to observe how the application processes them. Use both benign and malicious URLs.
+  - **Monitor Outbound Requests:** Use network monitoring tools to capture outgoing requests from the server when an external URL is processed. Check if the server is attempting to interact with the provided URL.
+  - **Test with Internal Network Addresses:** Input URLs that point to internal network resources (e.g., private IP addresses) to see if the server attempts to interact with these resources, which should typically be inaccessible.
+  - **Check for URL Filtering and Validation Mechanisms:** Examine whether the application has mechanisms in place to validate or filter out potentially harmful URLs. Input malformed URLs, URLs leading to unexpected protocols, or URLs pointing to known sensitive resources.
+  - **Deploy Dummy HTTP Servers:** Set up a controlled server and provide its URL to the application. Monitor the server's logs for incoming requests, which can confirm whether the application is making unauthorized external calls.
+  - **Evaluate Response Handling:** Analyze how the application handles responses from external servers to ensure it doesn't process or execute untrusted data without proper sanitation.
+  
+Each test should be documented thoroughly with the test methodology, the URLs used, the server's responses, and any impact observed. This documentation will help in patching the vulnerability and in future regression tests.
+
+**Vulnerability Title: Server-Side Request Forgery (SSRF) in Prerender Implementation on qiwi.com**
+
+- **Attack Vector:**
+  - The vulnerability exploits the prerendering capability provided by "Prerender HAR Capturer" which utilizes Headless Chrome.
+  - The attacker manipulates the 'User-Agent' header to impersonate a Slackbot, which is trusted by the server to pass requests for prerendering.
+  - By including a 'javascript' parameter in the GET request, the attacker inserts arbitrary JavaScript code. The server executes this code, which can force the server to make unintended external or internal network requests.
+
+- **Testing for SSRF Vulnerability:**
+  - Identify if the application uses any middleware or services for prerendering web content, especially if they use Headless browsers like Puppeteer, PhantomJS, or Chrome Headless.
+  - Check if the application handles user inputs in parameters that affect server functions, particularly those that might cause the server to fetch or display URLs.
+  - Craft requests with modified headers (like 'User-Agent') or with payloads in parameters that can be executed by the server. Common headers to test include, but are not limited to: 'User-Agent', 'X-Forwarded-For', 'Referer', and 'Cookie'.
+  - Use different internal and external payloads to see if the server can be manipulated to make network calls to undesired destinations. This can include fetching sensitive metadata from internal services or interacting with external systems inappropriately.
+  - Monitor the response from the server to determine if it executed the undesired action. Tools like Burp Suite's Collaborator can help catch blind SSRF vulnerabilities by providing external domains that notify you when accessed.
+  - Ensure thorough logging and monitoring are in place to detect anomalies in request patterns, which could indicate exploitation attempts.
+
+**Server-Side Request Forgery (SSRF) via IPv6 Blacklist Bypass in Slack Integrations**
+
+- **Attack Vector:**
+  - The vulnerability exploits the Slack feature that allows the definition of URLs in integrations such as Phabricator or custom Slash Commands to interact with backend systems.
+  - The exploit uses the IPv6 loopback address `[::]`, which is not properly handled by the blacklist meant to prevent internal network access, allowing requests to internal resources that support IPv6.
+  - By submitting specially crafted URLs containing the IPv6 loopback in the integration settings (`phabricator_url` or `url` field), an attacker can access services on restricted network addresses that listen on all interfaces or are IPv6-capable.
+
+- **Testing for Similar Vulnerabilities:**
+  - **Identify Integration Points:** Locate any application functionalities that accept URLs to fetch data or trigger interactions. This includes webhook features, third-party service integrations, and internal API interactions that can be controlled by user input.
+  - **Testing Blacklist Efficacy:** Attempt to use different IP literal formats, especially IPv6, to bypass blacklist filtering. Common transformations involve using variations like `[::]`, `[::1]`, `[0:0:0:0:0:0:0:1]`, and embedding these in URLs.
+  - **Service Enumeration Via Port Scanning:** Input different ports with the bypassed IP format (`http://[::]:port/`) to determine if different internal services can be reached or triggered.
+  - **Error Message Analysis:** Analyze the responses from the application for error messages or status codes that vary when different ports or URLs are used, as these can reveal information about the internal state or open ports.
+  - **Automated Testing Tools:** Consider employing or developing SSRF testing tools that automate the process of sending requests with various IP literals and logging the application responses. This helps in identifying unexpected network interactions that could point to SSRF vulnerabilities.
+  - **Review and Update Security Filters**: Ensure that security filters and input validation mechanisms are updated to consider new and evolving techniques for SSRF attacks, including comprehensive handling of different IP address formats and unconventional URL structures.
+
+Each of these steps should be executed with caution, ensuring compliance with legal and ethical guidelines, and should ideally be conducted in a controlled testing environment or with explicit permission from the network or application owners.
+
+**Vulnerability Title:** Server Side Request Forgery Exposes Victims Ip Address to External Server
+
+- **Attack Vector**
+  - The vulnerability exploits the Server Side Request Forgery (SSRF) where an attacker is able to send crafted requests from a vulnerable server to an internal or external server. This is achieved by manipulating inputs to a web application that are used in URL request generation.
+  - The SSRF in this scenario uses a script embedded in a manipulated URL designed to submit a request to a domain controlled by the attacker (an ngrok instance in this case), which logs the incoming requests.
+  - When a victim accesses this maliciously crafted URL, the script executes and forces the victim's browser or server to make an unintentional request to the specified destination, exposing sensitive information such as the IP address.
+
+- **Testing for SSRF Vulnerability**
+  1. **Identify Points of Interaction**: Look for places in the application where user input could be included in generating network requests. Common points include URL parameters, form inputs, HTTP headers, or file paths.
+  2. **Craft Malicious Payloads**: Test these points by injecting various SSRF payloads that try to make calls to an external server you control (similar to using an ngrok instance). Examples include input fields where URLs are expected or misused.
+  3. **Use of External Interaction Servers**: Set up an interaction server like Burp Collaborator or a custom server with logging capabilities to capture interactions. The server should log details of all incoming requests such as source IP, headers, and any potentially included data in the request.
+  4. **Evaluate the Response**: Monitor the interaction server for any incoming requests. Successful SSRF exploits should result in the server receiving unsolicited requests from the application’s back-end, thus confirming the vulnerability.
+  5. **Confirm the Vulnerability Scope**: Extend testing by trying to access various types of internal resources (local files, internal admin interfaces, other services within the network) to understand the severity and impact of the SSRF.
+  6. **Automate and Refine**: Utilize automated scanning tools to identify common SSRF patterns and refine manual testing based on findings. Incorporate tests in the CI/CD pipeline to catch regressions or new vulnerabilities in future releases.
+
+By following these detailed steps, testers can accurately assess the presence and impact of SSRF vulnerabilities in various web applications, ensuring comprehensive security testing and mitigation planning.
+
+**Server Side Request Forgery (SSRF) in Custom Integration Feature of console.helium.com**
+
+- **Attack Vector**:
+  - The SSRF vulnerability is exploited through the "Add a custom Integration" feature of console.helium.com. The application accepts and uses URLs provided by users without proper validation or sanitization.
+  - An attacker inputs a specially crafted URL, such as `http://169.254.169.254/latest/meta-data/ami-id`, which is an AWS EC2 metadata endpoint commonly targeted in SSRF attacks. This URL can be used to fetch metadata about the EC2 instance, which should not be accessible externally.
+  - When a device connected to the console sends a data packet, the server queries the specified URL and includes the response in the integration message, effectively leaking sensitive data.
+
+- **Testing for Similar Vulnerabilities in Other Applications**:
+  - Identify features in the application that interact with external systems based on user-supplied URLs or IP addresses.
+  - Test these features by supplying various internal network addresses, reputable SSRF testing payloads, or addresses that point to local or cloud metadata services.
+  - Use automated tools and scripts to generate and send requests to known internal resources (like `http://localhost/`, `http://127.0.0.1/`, or cloud metadata URLs such as `http://169.254.169.254/` for AWS, `http://metadata.google.internal` for GCP, and `http://169.254.169.254/metadata/instance?api-version=2021-02-01` for Azure) to see if the application fetches data from these sources.
+  - Check if the application performs any checks or filtering on the scheme, path, or port of user-supplied URLs; improper checks could be indicative of SSRF flaws.
+  - Analyze the server's response to see if it includes unexpected or sensitive data, which may indicate that an SSRF vulnerability exists.
+  - Review server logs for irregular access patterns or error messages that suggest blocked attempts to interact with unauthorized services or resources, as these could help identify security measures that need strengthening.
+  
+Thoroughly testing and reviewing an application's handling of external network interactions is crucial for identifying and mitigating SSRF vulnerabilities, thereby protecting sensitive data and internal services from unauthorized access.
+
+**Vulnerability Title: Server Side Request Forgery (SSRF) in Nextcloud App Releases**
+
+- **Attack Vector:**
+  - The SSRF vulnerability is exploited by injecting manipulated URLs which the server-side application will access. In this reported scenario, the application generates an outbound request to a specified internal resource, which in the context of SSRF, is an unusual or unauthorized target (e.g., internal IP addresses like 127.0.0.1). The input URLs targeting different ports are parsed by the server, and based on the responses (error codes or success messages), an attacker can infer the status of internal ports or services.
+
+- **Testing for SSRF Vulnerability:**
+  - Identify endpoints in applications that take URLs as inputs for server-side requests. These endpoints might be involved in features like importing data from a URL, linking external resources, or integrating with other web services.
+  - Craft or manipulate URLs to test if internal systems (like localhost or private IP addresses) can be accessed through these endpoints. Use varied protocols and ports to gauge the breadth of access (e.g., http://localhost, http://127.0.0.1:22).
+  - Observe error messages, response times, or outbound logs, if accessible, to understand whether the internal request was made and what the outcome was. Specific responses or errors can indicate open or closed ports, effectively mapping the internal network's structure.
+  - Automate this testing with tools that can systematically generate and send such requests, capturing responses for analysis.
+  - Always ensure adequate logging is in place to detect unusual internal requests which might hint at SSRF attempts. Enhanced logging aids in the quick detection and mitigation of such vulnerabilities.
+
+By following these steps and using the described attack vectors, one can identify potential SSRF vulnerabilities in various server-side applications, ensuring software integrity and network security.
+
+Vulnerability Title: CVE-2022-41040 - Server-Side Request Forgery (SSRF) in Microsoft Exchange Server
+
+- **Attack Vector Analysis:**
+  - **Vulnerability Summary:** CVE-2022-41040 is a Server-Side Request Forgery (SSRF) vulnerability found in Microsoft Exchange Server. It allows an attacker to send crafted requests from the affected server to itself or another server, which can lead to unauthorized actions or access to confidential information.
+  - **Triggering Condition:** The vulnerability is triggered through specially crafted requests to the autodiscover service, a feature in Exchange servers used primarily for automating the configuration of email clients.
+  - **Manipulation Technique:** The attacker crafts a request that includes the autodiscover feature but modifies the parameters, such as the email field, to include a redirection or reference to an unintended server or service.
+
+- **How to Test for Similar Vulnerabilities on Other Applications:**
+  - **Identify Entry Points:** Look for any services or APIs in the application that take URLs or identifiers as parameters. These are potential entry points for SSRF attacks.
+  - **Check for Redirection and Forwarding Rules:** Test how the application handles URL redirections or forwarding, especially parameters that accept fully qualified URLs which include remote resources.
+  - **Craft Malicious Requests:** Create requests with varying URL parameters aiming to access internal services (like database servers, cloud services, etc.) or external URLs that the server should not typically access.
+  - **Analyzing Responses:** Observe the responses to the crafted requests for any indications that the request was processed by an internal service or led to an unintended interaction with external services.
+  - **Automating Tests:** Use automated tools like Burp Suite's Intruder or custom scripts to send multiple requests with variations in parameters to discover SSRF vulnerabilities systematically.
+  - **Security Measures Check:** Verify if there are security measures in place such as strict input validation, URL filtering, or use of whitelists for outgoing connections, which can mitigate SSRF risks. If these are lacking, it highlights potential vulnerabilities.
+
+Through a detailed analysis and testing based on the described approach, the vulnerability in other applications can be detected effectively, aiding in strengthening the security posture against SSRF threats.
+
+### Vulnerability Title: Redirection Attack through Hijacked Metrics-Server in Kubernetes
+
+- **Attack Vector**:
+  - The vulnerability arises when the metrics-server (or any aggregated API server) in a Kubernetes environment like AKS is compromised. This can happen through unauthorized changes to the container image, or by deploying malicious pods that use the same label selectors within the `kube-system` namespace.
+  - The hijacked server is configured to issue HTTP 301/302 redirection responses to clients querying the metrics API. This redirection leads the client requests to an attacker-controlled endpoint, possibly capturing sensitive information or conducting spam activities.
+
+- **Testing Methodology**:
+  1. **Establish a Controlled Environment**:
+     - Set up a Kubernetes cluster or use a managed Kubernetes service like AKS for testing.
+     - Deploy a legitimate metrics-server or similar aggregated API server and observe baseline network traffic and API responses.
+  
+  2. **Simulate the Server Hijack**:
+     - Develop and deploy a malicious version of the metrics-server or create a separate pod with identical label selectors as the metrics-server within the `kube-system` namespace. This pod should aim to redirect requests to a designated attacker-controlled endpoint.
+     - You can use a custom Docker image similar to the one provided (`weinong/go-redirect`) and deploy it using a modified Kubernetes YAML configuration (`go-redirect.yaml`).
+
+  3. **Monitor and Capture Traffic**:
+     - Set up a monitoring tool or logging system on the attacker-controlled endpoint to capture redirected traffic. Verify if the traffic includes sensitive data such as bearer tokens, exactly which components of Kubernetes (e.g., kube-controller-manager) are impacted, and the nature of redirected requests.
+     - Assess the headers, methods, and body of the requests to gain insights into what information is leaked or manipulated during the redirection.
+  
+  4. **Analyze Security Configuration and Logs**:
+     - Check Kubernetes cluster settings and API server logs for any unauthorized changes or suspicious activities. Increased log verbosity might reveal attempts to use or abuse access tokens or other sensitive data.
+     - Review Kubernetes network policies and RBAC settings to identify potential loopholes that allowed the hijacking or redirection.
+
+  5. **Recommendations for Mitigation**:
+     - Implement strict image verification policies in Kubernetes to prevent unauthorized changes to container images.
+     - Use more restrictive label selectors and network policies that isolate critical components like the metrics-server from potential attackers.
+     - Regularly update and patch Kubernetes and its components to protect against vulnerabilities and exploits.
+
+Vulnerability Title: SSRF in PHP functions parse_url and cURL (CVE-2017-7189)
+
+- **Attack Vector**:
+  - This vulnerability stems from the discrepancy in how `parse_url()` and `cURL` functions interpret URLs in PHP. In certain scenarios, `parse_url()` may inaccurately parse URLs allowing specially crafted URLs to bypass sanitation logic, which in turn can be erroneously processed by `cURL`. This discrepancy can potentially be exploited by an attacker to initiate server-side request forgery (SSRF) attacks where the server makes unintended HTTP requests to internal or external services.
+
+- **Testing for the Vulnerability**:
+  1. **Identify Usage**: Check if the target application uses the `parse_url()` function followed by `cURL` requests. This pattern is susceptible to the described vulnerability.
+  2. **Craft Malicious URLs**: Create URLs that are misinterpreted differently by `parse_url()` and `cURL`. An example might be using ambiguous components like user credentials or special characters that are handled differently by these functions.
+  3. **Inject URLs**: Use these URLs in the application context where `parse_url()` output directly influences `cURL` requests. Observe if the application makes unintended or altered HTTP requests which indicates a potential vulnerability.
+  4. **Monitor Outgoing Requests**: Set up a monitoring system to detect outbound requests from the server. This can help in identifying unintended interactions with internal or external systems triggered by the SSRF vulnerability.
+  5. **Check Version and Configuration**: Verify the version of PHP being used; versions before the fix for CVE-2017-7189 are vulnerable. Also, check how error handling and redirections are managed in `cURL` options since they can influence the impact of this vulnerability.
+
+Thorough testing and observing behavior in controlled environments are crucial to identify potential misuse of this vulnerability in other applications. Be meticulous in crafting test cases that highlight differences in URL parsing to maximize detection efficacy.
+

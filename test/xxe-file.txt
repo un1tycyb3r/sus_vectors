@@ -1,0 +1,54 @@
+### XML External Entities (XXE) and Local File Inclusion
+- **Attack Vector**: The XXE vulnerability exploited in this CTF involves uploading a malicious XML file to an externally referenced S3 bucket controlled by the attacker. The malicious XML file contains DOCTYPE declarations that define entities pulling data from local files or other resources. The application consumes this XML file, unintentionally processing the defined entities and performing actions defined by the attacker, such as reading local files or making external calls configured in the XML.
+
+- **Testing Methodology**:
+  1. **Identify XML Input Points**: Begin by identifying parts of the application that accept XML input, such as file uploads, or fields expecting XML-formatted strings.
+  2. **Craft Malicious XML**: Create XML files that define external entities pointing to internal resources or other sensitive data destinations. Example: Use DOCTYPE and ENTITY to attempt to load system files or make external web requests.
+  3. **Upload/Submit XML and Observe Responses**: Upload or submit this XML through the identified inputs and observe the application's response for any signs of the internal data contents being processed or leaked, errors, or unexpected behaviors that could indicate successful entity processing.
+  4. **Utilize Out-of-Band Interaction**: In scenarios where direct data retrieval via XXE is not possible due to outbound data transmission restrictions, use techniques like out-of-band interactions (DNS lookups, interactions with external web servers) to detect if the XML parser is interacting with external systems via malicious XML entities.
+  5. **Examine Application Configuration**: Review server and application settings related to XML parsing and entity processing. Specific server configurations may disable unsafe XML features — understanding these settings is crucial for accurate vulnerability assessments.
+
+### SQL Injection via Unsanitized Input Handling
+- **Attack Complexion**: This attack targets the weak input validation that fails to sanitize user-supplied data before incorporating it into SQL queries. The exploitable endpoint processes values directly through concatenation, enabling the execution of unintended SQL commands.
+
+- **Testing Methodology**:
+  1. **Identify Vulnerable Endpoints**: Find endpoints that interact with database systems and accept parameters through user input, such as URLs, form data, or headers.
+  2. **Manipulate Input Values**: Inject SQL control characters or SQL statements into the parameters to modify the query logic. Common injections involve using single quotes ('), SQL keywords (AND, OR), and command terminators (;).
+  3. **Observe Behavior Changes**: Monitor application responses for any changes indicative of successful injection, such as unauthorized data exposure, database errors displayed, or altered application logic.
+  4. **Use Automated Tools**: Leverage tools like SQLmap to automate the testing process across varying SQL injection techniques, helping identify more complex injection vulnerabilities.
+  5. **Confirm Union-Based Exploitation**: Attempt 'UNION SELECT' injections to append malicious queries, specifically targeting the extraction of valuable data to verify data exposure pathways.
+  6. **Boundary Testing**: Validate boundaries enforced by application logic or security mechanisms such as firewalls and Web Application Firewalls (WAFs), ensuring they adequately block typical and atypical injection payloads.
+
+### Exfiltration Through ICMP Ping
+- **Attack Schema**: An inventive technique leveraging SQL injection vulnerabilities to invoke an ICMP ping to an attacker-controlled system. Each ping’s packet size is manipulated based on extracted data values, turning the packet size into a data exfiltration channel.
+
+- **Testing Methodology**:
+  1. **Identify Endpoint Executing System Commands**: Identify endpoints capable of triggering system commands or network interactions such as pinging other systems.
+  2. **Inject Control Statements via Test Payloads**: Test if these endpoints can be manipulated by SQL injection to alter the system command dynamically executed (modifying the IP, packet size, or other parameters).
+  3. **Set Up Listener**: On an attacker-controlled server, set up a network listener to capture ICMP packets or other outbound requests.
+  4. **Inject Conditional SQL Statements**: Use conditional SQL statements to manipulate the packet size or target IP based on specific data values from the database, adapting the attack based on response observations.
+  5. **Analyze Network Traffic**: Analyze inbound ICMP traffic on the attacker-controlled server to interpret altered packet sizes or frequencies as exfiltrated data.
+  6. **Optimize Blind SQLi Exploits**: Refine the approach for blind SQL injection scenarios by controlling and observing changes in time delays or network traffic patterns related to different test payloads.
+
+Applying these techniques systematically across different applications will help identify and mitigate vulnerabilities effectively, adhering to the outlined methods to ensure thoroughness and accuracy in vulnerability detection and assessment.
+
+Vulnerability Title: XML External Entity (XXE) Execution in Weblate
+
+- **Attack Vector**:
+  - The vulnerability is exploited through the file upload functionality in Weblate where users can upload translation files in .XLF format.
+  - The XXE vulnerability is triggered when the application parses XML input that includes a reference to an external entity. This can lead to file disclosure, Server-Side Request Forgery (SSRF), or even Remote Code Execution (RCE) in some cases.
+
+- **Testing for XXE Vulnerability on Other Applications**:
+  - Identify any functionalities where XML input is accepted, particularly file uploads, form inputs, or parts of the application that deal with XML-based configurations or data exchange.
+  - Construct an XML payload that declares an external entity linked to a file that is typically readable by the application. For a basic test, you can use system files like `/etc/passwd` on Unix-based systems:
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+    <data>&xxe;</data>
+    ```
+  - Insert the payload into the XML input or upload the malicious XML file to the application. Observe the response for any indication that the file has been read or processed.
+  - Use variations of the payload to bypass security filters or restrictions that might be in place to mitigate XXE attacks. These can include using different XML encodings, obfuscating the declaration, or leveraging other protocol handlers (`http://`, `https://`).
+  - Look for detailed error messages or verbose outputs in the application's responses that could disclose information about the internal state of the application, file paths, or server configurations.
+  - To confirm vulnerability, check if the XML parser used by the application is configured to resolve external entities. If possible, recommend using a less vulnerable parser or disabling external entity processing in the parser's settings.
+  - Regularly audit and update XML parsers and libraries to their latest versions as these often include security enhancements that prevent XXE attacks.
+
